@@ -7,4 +7,4 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "secretary-db"
-database_id = "ここにD1のdatabase_idを貼り付け"
+database_id = "6d051eb4-f375-411f-8847-c8f662d9d698"
