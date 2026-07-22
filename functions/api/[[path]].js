@@ -52,7 +52,7 @@ async function hmacHex(secret, message) {
 
 // セッショントークン（パスワードそのものは保存しない）
 function signingKey(env) {
-  return env.AUTH_SECRET || env.APP_PASSWORD || 'insecure-default';
+  return (env.AUTH_SECRET || env.APP_PASSWORD || 'insecure-default').trim();
 }
 async function sessionToken(env) {
   return hmacHex(signingKey(env), 'authorized');
@@ -102,11 +102,12 @@ export async function onRequest(context) {
   // --- 認証エンドポイント（ログインは未認証でも通す） ---
   if (segs[0] === 'login' && method === 'POST') {
     const body = await readBody(request);
-    const password = (body.password || '').toString();
-    if (!env.APP_PASSWORD) {
+    const password = (body.password || '').toString().trim();
+    const expected = (env.APP_PASSWORD || '').trim();
+    if (!expected) {
       return json({ error: 'サーバーにパスワードが設定されていません' }, 500);
     }
-    if (!safeEqual(password, env.APP_PASSWORD)) {
+    if (!safeEqual(password, expected)) {
       return json({ error: 'パスワードが違います' }, 401);
     }
     const token = await sessionToken(env);
