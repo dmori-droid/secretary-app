@@ -1,0 +1,12 @@
+# 個人データ（メモ・タスク・振り返り）は公開しない
+data.json
+
+# Node.js
+node_modules/
+npm-debug.log*
+
+# エディタ / OS
+.DS_Store
+Thumbs.db
+desktop.ini
+.claude/

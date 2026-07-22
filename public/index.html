@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>秘書アプリ</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+      margin: 0;
+      background: #f2f4f8;
+      color: #1f2933;
+      line-height: 1.6;
+    }
+    header {
+      background: #2c3e50;
+      color: #fff;
+      padding: 20px 24px;
+    }
+    header h1 { margin: 0; font-size: 1.4rem; }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+
+    /* ダッシュボード */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .stat-card .num { font-size: 2rem; font-weight: 700; color: #2c3e50; }
+    .stat-card .label { font-size: 0.85rem; color: #66707a; }
+    .stat-card.alert .num { color: #e67e22; }
+
+    section {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    section h2 {
+      margin: 0 0 14px;
+      font-size: 1.1rem;
+      border-left: 4px solid #2c3e50;
+      padding-left: 10px;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd2d9;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      margin-bottom: 10px;
+    }
+    textarea { resize: vertical; min-height: 70px; }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      padding: 8px 16px;
+    }
+    .btn-primary { background: #2c3e50; color: #fff; }
+    .btn-primary:hover { background: #1a2530; }
+
+    ul { list-style: none; padding: 0; margin: 0; }
+    .item {
+      border: 1px solid #e4e7eb;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .item .title { font-weight: 600; }
+    .item .body { white-space: pre-wrap; margin: 4px 0; color: #3e4c59; }
+    .item .meta { font-size: 0.78rem; color: #9aa5b1; }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .task-item .task-main { flex: 1; }
+    .task-item.done .task-text { text-decoration: line-through; color: #9aa5b1; }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .badge.todo { background: #fff4e5; color: #e67e22; }
+    .badge.ok { background: #e3f6e9; color: #27ae60; }
+
+    .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+    .btn-done { background: #27ae60; color: #fff; }
+    .btn-del { background: #f0f2f5; color: #e74c3c; }
+    .btn-del:hover { background: #fde8e6; }
+
+    .empty { color: #9aa5b1; font-size: 0.9rem; text-align: center; padding: 12px; }
+
+    .hint { font-size: 0.78rem; color: #9aa5b1; margin-top: 6px; }
+
+    /* 最新の振り返り（ダッシュボード内） */
+    .latest-reflection {
+      background: #eef4fb;
+      border: 1px solid #d3e2f2;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 28px;
+    }
+    .latest-reflection .lr-head {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #2c6ca8;
+      margin-bottom: 6px;
+    }
+    .latest-reflection .lr-week {
+      display: inline-block;
+      font-size: 0.75rem;
+      background: #2c6ca8;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+    }
+    .latest-reflection .lr-body {
+      white-space: pre-wrap;
+      color: #33424f;
+    }
+
+    input[type="week"] {
+      padding: 10px;
+      border: 1px solid #cbd2d9;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header><h1>📋 秘書アプリ</h1></header>
+
+  <div class="container">
+    <!-- ダッシュボード -->
+    <div class="dashboard">
+      <div class="stat-card">
+        <div class="num" id="stat-memo">0</div>
+        <div class="label">メモの件数</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-task">0</div>
+        <div class="label">タスクの件数</div>
+      </div>
+      <div class="stat-card alert">
+        <div class="num" id="stat-todo">0</div>
+        <div class="label">未完了タスク</div>
+      </div>
+    </div>
+
+    <!-- 最新の振り返り -->
+    <div class="latest-reflection" id="latest-reflection">
+      <div class="lr-head">📝 最新の振り返り</div>
+      <div class="lr-body" id="lr-body">まだ振り返りがありません</div>
+    </div>
+
+    <!-- 週次の振り返り追加 -->
+    <section>
+      <h2>週次の振り返りを追加</h2>
+      <input type="week" id="reflection-week" />
+      <textarea id="reflection-comment" placeholder="今週の振り返りコメント"></textarea>
+      <button class="btn-primary" id="add-reflection">振り返りを保存</button>
+      <div class="hint">※ 同じ週にもう一度保存すると、内容が上書きされます</div>
+    </section>
+
+    <!-- 振り返り一覧 -->
+    <section>
+      <h2>振り返り一覧</h2>
+      <ul id="reflection-list"></ul>
+    </section>
+
+    <!-- メモ追加 -->
+    <section>
+      <h2>メモを追加</h2>
+      <input type="text" id="memo-title" placeholder="タイトル" />
+      <textarea id="memo-content" placeholder="本文"></textarea>
+      <button class="btn-primary" id="add-memo">メモを追加</button>
+    </section>
+
+    <!-- メモ一覧 -->
+    <section>
+      <h2>メモ一覧</h2>
+      <ul id="memo-list"></ul>
+    </section>
+
+    <!-- タスク追加 -->
+    <section>
+      <h2>タスクを追加</h2>
+      <input type="text" id="task-title" placeholder="やること" />
+      <button class="btn-primary" id="add-task">タスクを追加</button>
+    </section>
+
+    <!-- タスク一覧 -->
+    <section>
+      <h2>タスク一覧</h2>
+      <ul id="task-list"></ul>
+    </section>
+  </div>
+
+  <script>
+    // 日時を読みやすい形式に整形
+    function fmt(iso) {
+      const d = new Date(iso);
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ` +
+             `${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    // "2026-W30" を "2026年 第30週" と表示
+    function fmtWeek(w) {
+      const m = /^(\d{4})-W(\d{2})$/.exec(w || '');
+      return m ? `${m[1]}年 第${Number(m[2])}週` : w;
+    }
+
+    // 今日が属するISO週を "2026-W30" 形式で返す
+    function currentWeek() {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      // 木曜日基準でISO週番号を計算
+      d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+      const week1 = new Date(d.getFullYear(), 0, 4);
+      const weekNo =
+        1 +
+        Math.round(
+          ((d - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7
+        );
+      return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      })[c]);
+    }
+
+    async function api(url, options) {
+      const res = await fetch(url, options);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'エラーが発生しました');
+      return data;
+    }
+
+    // 画面全体を再描画
+    async function refresh() {
+      const state = await api('/api/state');
+
+      // ダッシュボード
+      document.getElementById('stat-memo').textContent = state.stats.memoCount;
+      document.getElementById('stat-task').textContent = state.stats.taskCount;
+      document.getElementById('stat-todo').textContent = state.stats.uncompletedTaskCount;
+
+      // メモ一覧
+      const memoList = document.getElementById('memo-list');
+      if (state.memos.length === 0) {
+        memoList.innerHTML = '<div class="empty">メモはまだありません</div>';
+      } else {
+        memoList.innerHTML = state.memos.map((m) => `
+          <li class="item">
+            <div class="title">${esc(m.title) || '(無題)'}</div>
+            ${m.content ? `<div class="body">${esc(m.content)}</div>` : ''}
+            <div class="meta">作成: ${fmt(m.createdAt)}</div>
+            <button class="btn-del btn-sm" data-del-memo="${m.id}">削除</button>
+          </li>`).join('');
+      }
+
+      // タスク一覧
+      const taskList = document.getElementById('task-list');
+      if (state.tasks.length === 0) {
+        taskList.innerHTML = '<div class="empty">タスクはまだありません</div>';
+      } else {
+        taskList.innerHTML = state.tasks.map((t) => `
+          <li class="item task-item ${t.done ? 'done' : ''}">
+            <div class="task-main">
+              <span class="task-text">${esc(t.title)}</span>
+              <span class="badge ${t.done ? 'ok' : 'todo'}">${t.done ? '完了' : '未完了'}</span>
+              <div class="meta">作成: ${fmt(t.createdAt)}</div>
+            </div>
+            <button class="btn-done btn-sm" data-toggle-task="${t.id}">
+              ${t.done ? '戻す' : '完了'}
+            </button>
+            <button class="btn-del btn-sm" data-del-task="${t.id}">削除</button>
+          </li>`).join('');
+      }
+
+      // ダッシュボード: 最新の振り返り
+      const lr = state.stats.latestReflection;
+      const lrBody = document.getElementById('lr-body');
+      if (lr) {
+        lrBody.innerHTML =
+          `<span class="lr-week">${esc(fmtWeek(lr.week))}</span>` +
+          `<div>${esc(lr.comment)}</div>`;
+      } else {
+        lrBody.textContent = 'まだ振り返りがありません';
+      }
+
+      // 振り返り一覧（週の新しい順・サーバーで整列済み）
+      const reflectionList = document.getElementById('reflection-list');
+      if (state.reflections.length === 0) {
+        reflectionList.innerHTML = '<div class="empty">振り返りはまだありません</div>';
+      } else {
+        reflectionList.innerHTML = state.reflections.map((r) => `
+          <li class="item">
+            <div class="title">${esc(fmtWeek(r.week))}</div>
+            <div class="body">${esc(r.comment)}</div>
+            <div class="meta">記録: ${fmt(r.createdAt)}</div>
+            <button class="btn-del btn-sm" data-del-reflection="${r.id}">削除</button>
+          </li>`).join('');
+      }
+    }
+
+    // メモ追加
+    document.getElementById('add-memo').addEventListener('click', async () => {
+      const title = document.getElementById('memo-title').value;
+      const content = document.getElementById('memo-content').value;
+      try {
+        await api('/api/memos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content }),
+        });
+        document.getElementById('memo-title').value = '';
+        document.getElementById('memo-content').value = '';
+        refresh();
+      } catch (e) { alert(e.message); }
+    });
+
+    // タスク追加
+    document.getElementById('add-task').addEventListener('click', async () => {
+      const title = document.getElementById('task-title').value;
+      try {
+        await api('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title }),
+        });
+        document.getElementById('task-title').value = '';
+        refresh();
+      } catch (e) { alert(e.message); }
+    });
+
+    // 週次の振り返り保存
+    document.getElementById('add-reflection').addEventListener('click', async () => {
+      const week = document.getElementById('reflection-week').value;
+      const comment = document.getElementById('reflection-comment').value;
+      try {
+        await api('/api/reflections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ week, comment }),
+        });
+        document.getElementById('reflection-comment').value = '';
+        refresh();
+      } catch (e) { alert(e.message); }
+    });
+
+    // 一覧内のボタン操作（イベント委譲）
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      try {
+        if (btn.dataset.delMemo) {
+          await api('/api/memos/' + btn.dataset.delMemo, { method: 'DELETE' });
+          refresh();
+        } else if (btn.dataset.toggleTask) {
+          await api('/api/tasks/' + btn.dataset.toggleTask + '/toggle', { method: 'POST' });
+          refresh();
+        } else if (btn.dataset.delTask) {
+          await api('/api/tasks/' + btn.dataset.delTask, { method: 'DELETE' });
+          refresh();
+        } else if (btn.dataset.delReflection) {
+          await api('/api/reflections/' + btn.dataset.delReflection, { method: 'DELETE' });
+          refresh();
+        }
+      } catch (err) { alert(err.message); }
+    });
+
+    // Enterキーでタスク追加
+    document.getElementById('task-title').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('add-task').click();
+    });
+
+    // 振り返りの週入力を「今週」に初期設定
+    document.getElementById('reflection-week').value = currentWeek();
+
+    refresh();
+  </script>
+</body>
+</html>
