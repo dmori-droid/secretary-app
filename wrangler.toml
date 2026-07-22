@@ -1,0 +1,10 @@
+name = "secretary-app"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "public"
+
+# D1データベースのバインディング
+# database_id は「wrangler d1 create secretary-db」実行後に表示されるIDに置き換えてください。
+[[d1_databases]]
+binding = "DB"
+database_name = "secretary-db"
+database_id = "ここにD1のdatabase_idを貼り付け"

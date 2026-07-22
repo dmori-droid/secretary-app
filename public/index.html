@@ -17,8 +17,46 @@
       background: #2c3e50;
       color: #fff;
       padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     header h1 { margin: 0; font-size: 1.4rem; }
+    .logout-btn {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+    .logout-btn:hover { background: rgba(255, 255, 255, 0.28); }
+
+    /* ログイン画面 */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: #2c3e50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .login-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px 28px;
+      width: 320px;
+      max-width: 90%;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+    .login-box h2 { margin: 0 0 18px; font-size: 1.2rem; text-align: center; }
+    .login-box input {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #cbd2d9;
+      border-radius: 6px;
+      font-size: 1rem;
+      margin-bottom: 12px;
+    }
+    .login-box .btn-primary { width: 100%; padding: 11px; font-size: 1rem; }
+    .login-error { color: #e74c3c; font-size: 0.85rem; margin-top: 10px; text-align: center; min-height: 1em; }
     .container {
       max-width: 900px;
       margin: 0 auto;
@@ -152,9 +190,22 @@
   </style>
 </head>
 <body>
-  <header><h1>📋 秘書アプリ</h1></header>
+  <header>
+    <h1>📋 秘書アプリ</h1>
+    <button id="logout-btn" class="logout-btn" style="display:none">ログアウト</button>
+  </header>
 
-  <div class="container">
+  <!-- ログイン画面 -->
+  <div class="login-overlay" id="login-overlay" style="display:none">
+    <div class="login-box">
+      <h2>🔒 ログイン</h2>
+      <input type="password" id="login-password" placeholder="パスワード" autocomplete="current-password" />
+      <button class="btn-primary" id="login-btn">ログイン</button>
+      <div class="login-error" id="login-error"></div>
+    </div>
+  </div>
+
+  <div class="container" id="app" style="display:none">
     <!-- ダッシュボード -->
     <div class="dashboard">
       <div class="stat-card">
@@ -259,13 +310,38 @@
     async function api(url, options) {
       const res = await fetch(url, options);
       const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        const err = new Error(data.error || 'ログインが必要です');
+        err.unauthorized = true;
+        throw err;
+      }
       if (!res.ok) throw new Error(data.error || 'エラーが発生しました');
       return data;
     }
 
+    // ログイン画面の表示切り替え
+    function showLogin() {
+      document.getElementById('login-overlay').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('logout-btn').style.display = 'none';
+    }
+    function hideLogin() {
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('logout-btn').style.display = 'inline-block';
+    }
+
     // 画面全体を再描画
     async function refresh() {
-      const state = await api('/api/state');
+      let state;
+      try {
+        state = await api('/api/state');
+      } catch (e) {
+        if (e.unauthorized) { showLogin(); return; }
+        alert(e.message);
+        return;
+      }
+      hideLogin();
 
       // ダッシュボード
       document.getElementById('stat-memo').textContent = state.stats.memoCount;
@@ -400,6 +476,34 @@
     // Enterキーでタスク追加
     document.getElementById('task-title').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('add-task').click();
+    });
+
+    // ログイン
+    async function doLogin() {
+      const password = document.getElementById('login-password').value;
+      const errEl = document.getElementById('login-error');
+      errEl.textContent = '';
+      try {
+        await api('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        document.getElementById('login-password').value = '';
+        refresh();
+      } catch (e) {
+        errEl.textContent = e.message || 'ログインに失敗しました';
+      }
+    }
+    document.getElementById('login-btn').addEventListener('click', doLogin);
+    document.getElementById('login-password').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    // ログアウト
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try { await fetch('/api/logout', { method: 'POST' }); } catch (e) {}
+      showLogin();
     });
 
     // 振り返りの週入力を「今週」に初期設定

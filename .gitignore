@@ -1,5 +1,9 @@
-# 個人データ（メモ・タスク・振り返り）は公開しない
+# 個人データ（旧・ローカル版のファイル保存。現在はD1を使用）
 data.json
+
+# Cloudflare / ローカル開発
+.dev.vars
+.wrangler/
 
 # Node.js
 node_modules/

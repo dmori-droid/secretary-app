@@ -1,9 +1,19 @@
 {
   "name": "secretary-app",
-  "version": "1.0.0",
-  "description": "自分専用のシンプルな秘書アプリ（メモ・タスク管理・ダッシュボード）",
-  "main": "server.js",
+  "version": "2.0.0",
+  "description": "自分専用のシンプルな秘書アプリ（Cloudflare Pages + D1 / パスワード保護つき）",
   "scripts": {
-    "start": "node server.js"
+    "dev": "wrangler pages dev",
+    "deploy": "wrangler pages deploy",
+    "db:init:local": "wrangler d1 execute secretary-db --local --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute secretary-db --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "sharp@0.34.5": true,
+    "workerd@1.20260721.1": true
   }
 }
